@@ -333,6 +333,8 @@ public class RootLayoutController extends BorderPane implements Initializable {
     private SubScene subscene;
     private Group rootEntitiesGroup;
 
+    private TextField searchTree;
+
     @FXML
     public void menuLoadStory() {
         if (storiesLayer != null) {
@@ -387,7 +389,8 @@ public class RootLayoutController extends BorderPane implements Initializable {
                         selectedNameLabeledProperty,
                         rebuildSubsceneFlag,
                         defaultEmbryoFlag,
-                        annotationManager);
+                        annotationManager,
+                        searchTree);
                 sulstonTreeStage.setScene(new Scene(treePane));
                 sulstonTreeStage.setTitle("LineageTree");
                 sulstonTreeStage.initModality(NONE);

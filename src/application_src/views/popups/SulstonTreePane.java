@@ -24,6 +24,7 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
+import javafx.fxml.FXML;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -61,6 +62,7 @@ import application_src.controllers.layers.SearchLayer;
 import application_src.application_model.annotation.color.Rule;
 import application_src.application_model.annotation.color.ColorHash;
 
+import static application_src.application_model.data.CElegansData.PartsList.PartsList.*;
 import static java.lang.Math.max;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
@@ -77,19 +79,20 @@ import static javafx.scene.input.KeyCode.P;
 import static javafx.scene.input.KeyEvent.KEY_PRESSED;
 import static javafx.scene.input.MouseButton.PRIMARY;
 import static javafx.scene.input.MouseButton.SECONDARY;
-import static javafx.scene.paint.Color.BLACK;
-import static javafx.scene.paint.Color.WHITE;
-import static javafx.scene.paint.Color.web;
+import static javafx.scene.paint.Color.*;
 import static javafx.scene.text.Font.font;
 import static javafx.scene.text.FontWeight.SEMI_BOLD;
 
 import static javax.imageio.ImageIO.write;
-import static application_src.application_model.data.CElegansData.PartsList.PartsList.getFunctionalNameByLineageName;
 import static application_src.application_model.search.SearchConfiguration.SearchType.LINEAGE;
 import static application_src.application_model.search.SearchConfiguration.SearchType.NEIGHBOR;
 import static application_src.application_model.loaders.IconImageLoader.getMinusIcon;
 import static application_src.application_model.loaders.IconImageLoader.getPlusIcon;
 import static application_src.application_model.search.SearchConfiguration.SearchOption.CELL_NUCLEUS;
+
+import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 
 public class SulstonTreePane extends ScrollPane {
     //TODO decouple rendering as separate class from WG app specific interaction -as
@@ -142,6 +145,9 @@ public class SulstonTreePane extends ScrollPane {
     private boolean defaultEmbryoFlag;
     private AnnotationManager annotationManager;
 
+    @FXML
+    private TextField searchTree;
+
     public SulstonTreePane(
             final Stage ownStage,
             final SearchLayer searchLayer,
@@ -155,7 +161,8 @@ public class SulstonTreePane extends ScrollPane {
             final StringProperty selectedNameLabeledProperty,
             final BooleanProperty rebuildSubsceneFlag,
             final boolean defaultEmbryoFlag,
-            final AnnotationManager annotationManager) {
+            final AnnotationManager annotationManager,
+            TextField searchTree){
 
         super();
 
@@ -163,6 +170,9 @@ public class SulstonTreePane extends ScrollPane {
         this.defaultEmbryoFlag = requireNonNull(defaultEmbryoFlag);
 
         hiddenNodes = new ArrayList<>();
+
+
+
 
         clickHandler = event -> {
             final String sourceName = ((Node) event.getSource()).getId();
@@ -192,12 +202,17 @@ public class SulstonTreePane extends ScrollPane {
             }
         };
 
+
+
+
         this.ownStage = requireNonNull(ownStage);
 
         this.canvas = new AnchorPane();
         this.mainPane = requireNonNull(canvas);
         this.lineageData = requireNonNull(lineageData);
         this.movieTimeOffset = movieTimeOffset;
+
+
 
         this.timeProperty = requireNonNull(timeProperty);
         this.timeProperty.addListener((observable, oldValue, newValue) -> repositionTimeLine());
@@ -208,6 +223,7 @@ public class SulstonTreePane extends ScrollPane {
 
         this.colorHash = requireNonNull(colorHash);
         this.lineageTreeRoot = requireNonNull(lineageTreeRoot);
+
 
         this.rebuildSubsceneFlag = requireNonNull(rebuildSubsceneFlag);
         this.rebuildSubsceneFlag.addListener((observable, oldValue, newValue) -> {
@@ -270,6 +286,8 @@ public class SulstonTreePane extends ScrollPane {
         plusButton.getTransforms().add(new Translate(50, 5));
         minusButton.getTransforms().add(new Translate(15, 5));
 
+
+
         plusButton.setOnMousePressed(event -> {
             scaleTransform.setX(scaleTransform.getX() * 1.3333);
             scaleTransform.setY(scaleTransform.getY() * 1.3333);
@@ -279,6 +297,32 @@ public class SulstonTreePane extends ScrollPane {
             scaleTransform.setX(scaleTransform.getX() * .75);
             scaleTransform.setY(scaleTransform.getY() * .75);
         });
+
+
+
+
+        this.searchTree=new TextField();
+        this.searchTree.setPromptText("Enter name/keyword");
+        this.searchTree.setPrefWidth(200);
+        contentGroup.getChildren().add(this.searchTree);
+        this.searchTree.getTransforms().add(new Translate(90, 5));
+
+        final Button searchButton=new Button();
+        searchButton.setText("Search");
+        searchButton.getTransforms().add(new Translate(300,5));
+        contentGroup.getChildren().add(searchButton);
+        searchButton.setOnAction(e ->
+                {
+                    //List<Circle> toDraw = searchNode();
+                    //updateDrawing();
+                    //mainPane.getChildren().addAll(toDraw);
+
+                    searchNode();
+                    searchNode();
+            });
+
+
+
 
         final Pane yetanotherlevel = new Pane();
         yetanotherlevel.getChildren().add(contentGroup);
@@ -314,6 +358,8 @@ public class SulstonTreePane extends ScrollPane {
                 }
             }
         });
+
+
     }
 
     /**
@@ -323,6 +369,8 @@ public class SulstonTreePane extends ScrollPane {
     public void addDrawing() {
         addLines(lineageTreeRoot, mainPane);
     }
+
+
 
     // stolen from web to hack these tooltips to come up faster
     public static void hackTooltipStartTiming(final Tooltip tooltip, final int duration) {
@@ -370,6 +418,11 @@ public class SulstonTreePane extends ScrollPane {
      */
     private void setUpDefaultView() {
         // empty lines indicate a different level of the lineage tree
+        hiddenNodes.add("ABplpp");
+        hiddenNodes.add("ABprpp");
+        hiddenNodes.add("ABprpa");
+
+
         hiddenNodes.add("ABalaa");
         hiddenNodes.add("ABalap");
         hiddenNodes.add("ABalpa");
@@ -412,6 +465,10 @@ public class SulstonTreePane extends ScrollPane {
 
         hiddenNodes.add("D");
         hiddenNodes.add("P4");
+
+
+
+
     }
 
     private void showContextMenu(final String name, final double sceneX, final double sceneY) {
@@ -769,5 +826,39 @@ public class SulstonTreePane extends ScrollPane {
         protected double computeValue() {
             return root.getViewportBounds().getWidth();
         }
+    }
+
+    private List<Circle> searchNode(){
+        int x;
+        List<Circle> toDraw=new ArrayList<>();
+        String toSearch=searchTree.getText();
+        List<String> toSearch2=getLineageNamesByFunctionalName(searchTree.getText());
+        for(int i=toSearch.length()-1;i>1;i--){
+
+            hiddenNodes.remove(toSearch.substring(0,i));
+        }
+
+        for(int i=0;i<toSearch2.size();++i){
+
+            for(int j=toSearch2.get(i).length()-1;j>1;j--){
+                hiddenNodes.remove(toSearch2.get(i).substring(0,j));
+            }
+        }
+
+
+        for(Node currentnode:mainPane.getChildren()){
+            if(currentnode instanceof Line) {
+                if((toSearch2.contains(currentnode.getId())) || (toSearch.equalsIgnoreCase(currentnode.getId()))){
+                    Circle newcirc=new Circle(((Line) currentnode).getStartX(),(((Line) currentnode).getEndY()+((Line) currentnode).getStartY())/2,2);
+                    //Circle newcirc=new Circle(((Line) currentnode).getStartX(),((Line) currentnode).getEndY(),2);
+                    //newcirc.setId("temp");
+                    newcirc.setFill(RED);
+                    toDraw.add(newcirc);
+                }
+            }
+        }
+        updateDrawing();
+        mainPane.getChildren().addAll(toDraw);
+        return toDraw;
     }
 }

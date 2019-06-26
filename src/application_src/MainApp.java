@@ -34,6 +34,7 @@ public class MainApp extends Application implements ObserveWormGUIDES {
 
     private static Stage primaryStage;
 
+    //sub class of lineageData
     private static NucleiMgrAdapterResource nucleiMgrAdapterResource;
 
     private Scene scene;
