@@ -13,10 +13,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javafx.scene.layout.BorderPane;
 import application_src.application_model.annotation.AnnotationManager;
 import application_src.application_model.search.SearchConfiguration.SearchOption;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -93,6 +95,12 @@ import static application_src.application_model.search.SearchConfiguration.Searc
 import javafx.scene.control.TextField;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyEvent;
+
+
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.binding.DoubleBinding;
 
 public class SulstonTreePane extends ScrollPane {
     //TODO decouple rendering as separate class from WG app specific interaction -as
@@ -311,6 +319,7 @@ public class SulstonTreePane extends ScrollPane {
         searchButton.setText("Search");
         searchButton.getTransforms().add(new Translate(300,5));
         contentGroup.getChildren().add(searchButton);
+        //zoomGroup.getChildren().add(searchButton);
         searchButton.setOnAction(e ->
                 {
                     //List<Circle> toDraw = searchNode();
@@ -330,6 +339,13 @@ public class SulstonTreePane extends ScrollPane {
 
         bindLocation(plusButton, this, yetanotherlevel);
         bindLocation(minusButton, this, yetanotherlevel);
+        bindLocation(searchButton,this,yetanotherlevel);
+        //searchTree.textProperty().bindBidirectional(searchButton.textProperty());
+        BorderPane root = new BorderPane();
+        BorderPane top = new BorderPane();
+        top.setLeft(searchTree);
+        root.setTop(top);
+
 
         this.contextMenuController = requireNonNull(contextMenuController);
         this.contextMenuStage = requireNonNull(contextMenuStage);
@@ -360,6 +376,17 @@ public class SulstonTreePane extends ScrollPane {
         });
 
 
+    }
+
+
+    @FXML
+    public void buttonPressed(KeyEvent e)
+    {
+        if(e.getCode().toString().equals("ENTER"))
+        {
+           searchNode();
+           searchNode();
+        }
     }
 
     /**
@@ -543,6 +570,8 @@ public class SulstonTreePane extends ScrollPane {
                         .multiply(scontent.widthProperty().subtract(new ScrollPaneViewPortWidthBinding(s))));
 
     }
+
+
 
     private void updateDrawing() {
         // clear drawing
@@ -847,8 +876,9 @@ public class SulstonTreePane extends ScrollPane {
 
 
         for(Node currentnode:mainPane.getChildren()){
+            System.out.println(currentnode);
             if(currentnode instanceof Line) {
-                if((toSearch2.contains(currentnode.getId())) || (toSearch.equalsIgnoreCase(currentnode.getId()))){
+                if(((toSearch2.contains(currentnode.getId())) || (toSearch.equalsIgnoreCase(currentnode.getId())))&&((Line) currentnode).getStartX()-((Line) currentnode).getEndX()==0){
                     Circle newcirc=new Circle(((Line) currentnode).getStartX(),(((Line) currentnode).getEndY()+((Line) currentnode).getStartY())/2,2);
                     //Circle newcirc=new Circle(((Line) currentnode).getStartX(),((Line) currentnode).getEndY(),2);
                     //newcirc.setId("temp");
