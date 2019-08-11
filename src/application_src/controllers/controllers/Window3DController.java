@@ -220,6 +220,7 @@ public class Window3DController {
     private final Comparator<Shape3D> opacityComparator;
     // opacity value for "other" cells (with no rule attached)
     private final DoubleProperty othersOpacityProperty;
+    private final DoubleProperty numPrev;
     private final double nonSelectableOpacity = 0.25;
     private final List<String> otherCells;
     private final Vector<JavaPicture> javaPictures;
@@ -305,7 +306,7 @@ public class Window3DController {
     private LinkedList<Double> diameters;
     private List<SceneElement> sceneElementsAtCurrentTime;
     private List<SceneElementMeshView> currentSceneElementMeshes;
-//    private List<MeshView> currentSceneElementMeshes;
+    //    private List<MeshView> currentSceneElementMeshes;
     private List<SceneElement> currentSceneElements;
     private PerspectiveCamera camera;
     private Xform xform;
@@ -385,6 +386,7 @@ public class Window3DController {
             final Button clearAllLabelsButton,
             final TextField searchField,
             final Slider opacitySlider,
+            final Slider prevSlider,
             final CheckBox uniformSizeCheckBox,
             final CheckBox cellNucleusCheckBox,
             final CheckBox cellBodyCheckBox,
@@ -395,6 +397,7 @@ public class Window3DController {
             final IntegerProperty totalNucleiProperty,
             final DoubleProperty zoomProperty,
             final DoubleProperty othersOpacityProperty,
+            final DoubleProperty numPrev,
             final DoubleProperty rotateXAngleProperty,
             final DoubleProperty rotateYAngleProperty,
             final DoubleProperty rotateZAngleProperty,
@@ -730,7 +733,32 @@ public class Window3DController {
 
         }
 
+        this.numPrev = requireNonNull(numPrev);
+        requireNonNull(prevSlider).valueProperty().addListener((observable, oldValue, newValue) -> {
+            final double newRounded = round(newValue.doubleValue()) / 100.0;
+            final double oldRounded = round(oldValue.doubleValue()) / 100.0;
+            if (newRounded != oldRounded) {
+                numPrev.set(newRounded);
+                buildScene();
+            }
+        });
+        this.numPrev.addListener((observable, oldValue, newValue) -> {
+            final double newVal = newValue.doubleValue();
+            final double oldVal = oldValue.doubleValue();
+            if (newVal != oldVal && newVal >= 0 && newVal <= 1.0) {
+                prevSlider.setValue(newVal * 100);
+            }
+        });
+        if (defaultEmbryoFlag) {
+            this.numPrev.setValue(5);
+        } else {
+            /*
+             * if a non-default model has been loaded, set the opacity cutoff at the level where labels will
+             * appear by default
+             */
+            this.numPrev.set(0.26);
 
+        }
         uniformSizeCheckBox.setSelected(true);
         uniformSize = true;
         requireNonNull(uniformSizeCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -1629,8 +1657,8 @@ public class Window3DController {
         renderService.restart();
     }
 
-    private void getSceneData() {
-        final int requestedTime = timeProperty.get();
+    private void getSceneData(int time) {
+        int requestedTime = time;
         cellNames = new LinkedList<>(asList(lineageData.getNames(requestedTime)));
         positions = new LinkedList<>();
         for (double[] position : lineageData.getPositions(requestedTime)) {
@@ -1775,6 +1803,77 @@ public class Window3DController {
         // End search stuff
     }
 
+
+
+
+
+    private void getPrevSceneData(int time) {
+        int requestedTime = time;
+        cellNames = new LinkedList<>(asList(lineageData.getNames(requestedTime)));
+        positions = new LinkedList<>();
+        for (double[] position : lineageData.getPositions(requestedTime)) {
+            positions.add(new Double[]{
+                    position[0],
+                    position[1],
+                    position[2]
+            });
+        }
+        diameters = new LinkedList<>();
+        for (double diameter : lineageData.getDiameters(requestedTime)) {
+            diameters.add(diameter);
+        }
+        otherCells.clear();
+
+        totalNucleiProperty.set(cellNames.size());
+
+        spheres = new LinkedList<>();
+        if (defaultEmbryoFlag) {
+            meshes = new LinkedList<>();
+        }
+
+        if (defaultEmbryoFlag) {
+            // start scene element list, find scene elements present at current time, build meshes
+            // empty meshes and scene element references from last rendering
+            // same for story elements
+            if (sceneElementsList != null) {
+                meshNames = new LinkedList<>(asList(sceneElementsList.getSceneElementNamesAtTime(requestedTime)));
+            }
+
+            if (!currentSceneElementMeshes.isEmpty()) {
+                currentSceneElementMeshes.clear();
+                currentSceneElements.clear();
+            }
+
+
+            sceneElementsAtCurrentTime = sceneElementsList.getSceneElementsAtTime(requestedTime);
+            for (SceneElement se : sceneElementsAtCurrentTime) {
+                final SceneElementMeshView mesh = se.buildGeometry(requestedTime - getShapesIndexPad());
+                if (mesh != null) {
+                    mesh.getTransforms().addAll(rotateX, rotateY, rotateZ);
+
+                    // TRANSFORMS FOR LIBRARY LOADER
+                    //mesh.getTransforms().add(new Rotate(180., new Point3D(1, 0, 0)));
+//                    mesh.getTransforms().add(new Translate(
+//                            -offsetX * xScale,
+//                            offsetY * yScale,
+//                            offsetZ * zScale));
+
+                    // TRANSFORMS FOR MANUAL LOADER
+                    mesh.getTransforms().add(new Translate(
+                            -offsetX * xScale,
+                            -offsetY * yScale,
+                            -offsetZ * zScale));
+
+                    // add rendered mesh to meshes list
+                    currentSceneElementMeshes.add(mesh);
+                    // add scene element to rendered scene element reference for on-click responsiveness
+                    currentSceneElements.add(se);
+                }
+            }
+        }
+    }
+
+
     // TODO -> this should tap the annotation manager which has just been populated with these results
     private void updateLocalSearchResults() {
         if (searchResultsList == null) {
@@ -1858,6 +1957,29 @@ public class Window3DController {
 
         repositionNotes();
     }
+
+    private void addEntitiesNoNotes() {
+        List<Shape3D> entities = new ArrayList();
+        new ArrayList();
+        this.addEntities(entities);
+        entities.sort(this.opacityComparator);
+        this.rootEntitiesGroup.getChildren().addAll(entities);
+    }
+
+    public void addPrevTimePoints(int numPrev) {
+        ArrayList<Shape3D> entities = new ArrayList();
+        String[] cells = this.lineageData.getNames(numPrev);
+
+        for(int j = 0; j < cells.length; ++j) {
+            Shape3D cell = this.getEntityWithName(cells[j]);
+            entities.add(cell);
+        }
+
+        this.addCellGeometries(entities);
+        this.addSceneElementGeometries(entities);
+        this.addEntities(entities);
+    }
+
 
     /**
      * Inserts appropriate 3d geometries into the list of entities that is later added to the subscene
@@ -3006,8 +3128,14 @@ public class Window3DController {
                 protected Void call() throws Exception {
                     runLater(() -> {
                         refreshScene();
-                        getSceneData();
+                        getSceneData(timeProperty.get());
                         addEntitiesAndNotes();
+                        int loop = (int)numPrev.get();
+
+                        for(int i = timeProperty.get() - 1; i > timeProperty.get() - loop; --i) {
+                            getSceneData(i);
+                            addEntitiesNoNotes();
+                        }
                     });
                     return null;
                 }
